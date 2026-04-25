@@ -223,15 +223,9 @@ install(TARGETS ${PROJECT_NAME}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
-set(DEPLOY_OPTIONS "")
-if (APPLE)
-    # set(DEPLOY_OPTIONS "-codesign=-")
-endif()
-
 qt_generate_deploy_app_script(
     TARGET ${PROJECT_NAME}
     OUTPUT_SCRIPT deploy_script
-    DEPLOY_TOOL_OPTIONS ${DEPLOY_OPTIONS}
     MACOS_BUNDLE_POST_BUILD
     NO_UNSUPPORTED_PLATFORM_ERROR
 )
