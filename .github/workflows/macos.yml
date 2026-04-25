@@ -1,0 +1,83 @@
+name: macOS
+on:
+  push:
+    paths:
+      - '**'
+  pull_request:
+    paths:
+      - '**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        include:
+          - qt_version: 6.11.0
+            qt_arch: clang_64
+            modules: ''
+
+    env:
+      REPOSITORY_NAME: MergeQt
+      BUILD_TYPE: Release
+      BUILD_PATH: build
+      QT_HOST: mac
+      QT_TARGET: desktop
+      ARCHIVE_NAME: MergeQt-${{ matrix.qt_version }}-${{ matrix.qt_arch }}
+
+    steps:
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ matrix.qt_version }}
+          host: ${{ env.QT_HOST }}
+          target: ${{ env.QT_TARGET }}
+          arch: ${{ matrix.qt_arch }}
+          install-deps: true
+          cache: true
+          modules: ${{ matrix.modules }}
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          submodules: recursive
+
+      - name: CMake Configure
+        run: |
+          cmake \
+            -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} \
+            -DCMAKE_INSTALL_PREFIX=${{ env.BUILD_PATH }}/${{ env.BUILD_TYPE }} \
+            -B ${{ env.BUILD_PATH }}
+
+      - name: CMake Install
+        run: |
+          cmake \
+            --build ${{ env.BUILD_PATH }} \
+            --target install \
+            --config ${{ env.BUILD_TYPE }} \
+            -j4
+
+      - name: Package
+        run: |
+          macdeployqt \
+            ${{ github.workspace }}/${{ env.BUILD_PATH }}/${{ env.BUILD_TYPE }}/${{ env.REPOSITORY_NAME }}.app \
+            -verbose=1 \
+            -dmg
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARCHIVE_NAME }}.dmg
+          path: ${{ github.workspace }}/${{ env.BUILD_PATH }}/${{ env.BUILD_TYPE }}/${{ env.REPOSITORY_NAME }}.dmg
+          if-no-files-found: error
+
+      - name: Upload Release
+        if: startsWith(github.event.ref, 'refs/tags/')
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ${{ github.workspace }}/${{ env.BUILD_PATH }}/${{ env.BUILD_TYPE }}/${{ env.REPOSITORY_NAME }}.dmg
+          asset_name: ${{ env.ARCHIVE_NAME }}.dmg
+          tag: ${{ github.ref }}
+          overwrite: true
