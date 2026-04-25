@@ -226,7 +226,6 @@ install(TARGETS ${PROJECT_NAME}
 qt_generate_deploy_app_script(
     TARGET ${PROJECT_NAME}
     OUTPUT_SCRIPT deploy_script
-    MACOS_BUNDLE_POST_BUILD
     NO_UNSUPPORTED_PLATFORM_ERROR
 )
 install(SCRIPT ${deploy_script})
